@@ -3,17 +3,24 @@ import React, { useState, useEffect } from "react";
 import "./App.css";
 import { format, subDays } from "date-fns";
 
-const checklistItems = [
-  "Workout 1",
-  "Workout 2",
-  "Drink 1 Gallon Water",
-  "Read 10 Pages",
-  "Follow Diet",
-  "Take Progress Photo"
-];
+const checklistItemsPerUser = {
+  Aheli: [
+    "Left Hand Morning", "30 Minutes Reading", "4 Hydroflasks Water",
+    "1 Hour MCAT", "Cooked Meal", "Workout", "Outdoor Activity", "Daily News", "2 Leetcode"
+  ],
+  Vishnu: [
+    "Yoga", "Meditation", "No Sugar", "Journal", "10k Steps"
+  ],
+  Varun: [
+    "Run 2 miles", "Stretch", "Cold Shower", "Read 15 pages"
+  ]
+};
+
+const checklistItems = checklistItemsPerUser[user];
+
 
 const getTodayDateString = (offset = 0) => {
-  return format(subDays(new Date(), offset), "EEEE, MMMM d"); // Format: Monday, June 15
+  return format(subDays(new Date(), offset), "EEEE, MMMM d");
 };
 
 const getInitialData = () => {
@@ -65,7 +72,7 @@ const Hard75DuoApp = () => {
     return Math.round((completed / checklistItems.length) * 100);
   };
 
-  const users = ["user1", "user2", "user3"];
+  const users = ["Aheli", "Vishnu", "Varun"];
 
   const toggleDropdown = user => {
     setOpenUsers(prev => ({ ...prev, [user]: !prev[user] }));
@@ -105,7 +112,7 @@ const Hard75DuoApp = () => {
             {openUsers[user] && (
               <div className="card-content">
                 <ul className="checklist">
-                  {checklistItems.map(item => (
+                  {checklistItemsPerUser[user].map(item => (
                     <li key={item}>
                       <label>
                         <input
