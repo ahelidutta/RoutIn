@@ -13,7 +13,7 @@ const checklistItems = [
 ];
 
 const getTodayDateString = (offset = 0) => {
-  return format(subDays(new Date(), offset), "yyyy-MM-dd");
+  return format(subDays(new Date(), offset), "MMMM d"); // Format: Month Day
 };
 
 const getInitialData = () => {
@@ -25,6 +25,7 @@ const Hard75DuoApp = () => {
   const [data, setData] = useState(getInitialData);
   const [currentDayOffset, setCurrentDayOffset] = useState(0);
   const [currentUser, setCurrentUser] = useState("user1");
+  const [openUsers, setOpenUsers] = useState({ user1: true, user2: false, user3: false });
 
   const currentDate = getTodayDateString(currentDayOffset);
 
@@ -66,6 +67,10 @@ const Hard75DuoApp = () => {
 
   const users = ["user1", "user2", "user3"];
 
+  const toggleDropdown = user => {
+    setOpenUsers(prev => ({ ...prev, [user]: !prev[user] }));
+  };
+
   return (
     <div className="app-container">
       <h1 className="main-title">75 Hard Trio Tracker</h1>
@@ -88,27 +93,29 @@ const Hard75DuoApp = () => {
       <div className="card-stack">
         {users.map(user => (
           <div key={user} className={`card ${user === currentUser ? "active-user" : ""}`}>
-            <div className="card-content">
-              <div className="card-header">
-                <h2>{user.charAt(0).toUpperCase() + user.slice(1).replace("user", "User ")}</h2>
-                <p className="completion-percentage">{getTodayCompletionPercentage(user)}% complete</p>
-              </div>
-              <ul className="checklist">
-                {checklistItems.map(item => (
-                  <li key={item}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        disabled={user !== currentUser}
-                        checked={data[currentDate]?.[user]?.[item] || false}
-                        onChange={() => toggleItem(user, currentDate, item)}
-                      />
-                      {item}
-                    </label>
-                  </li>
-                ))}
-              </ul>
+            <div className="card-header dropdown" onClick={() => toggleDropdown(user)}>
+              <h2>{user.charAt(0).toUpperCase() + user.slice(1).replace("user", "User ")}</h2>
+              <p className="completion-percentage">{getTodayCompletionPercentage(user)}% complete</p>
             </div>
+            {openUsers[user] && (
+              <div className="card-content">
+                <ul className="checklist">
+                  {checklistItems.map(item => (
+                    <li key={item}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          disabled={user !== currentUser}
+                          checked={data[currentDate]?.[user]?.[item] || false}
+                          onChange={() => toggleItem(user, currentDate, item)}
+                        />
+                        {item}
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -118,7 +125,7 @@ const Hard75DuoApp = () => {
           {users.map(user => (
             <div key={user}>
               <p>{user.charAt(0).toUpperCase() + user.slice(1).replace("user", "User ")}</p>
-              <p>⭐ {getCompletedDaysCount(user)} days</p>
+              <p>⭐ {getCompletedDaysCount(user)}</p>
             </div>
           ))}
         </div>
