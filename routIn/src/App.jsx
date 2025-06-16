@@ -1,4 +1,3 @@
-// Hard75DuoApp.jsx
 import React, { useState, useEffect } from "react";
 import "./App.css";
 import { format, subDays } from "date-fns";
@@ -6,7 +5,7 @@ import { format, subDays } from "date-fns";
 const checklistItemsPerUser = {
   Aheli: [
     "Left Hand Morning", "30 Minutes Reading", "4 Hydroflasks Water",
-    "1 Hour MCAT", "Cooked Meal", "Workout", "Outdoor Activity", "Daily News", "2 Leetcode"
+    "1 Hour MCAT", "Cooked Meal", "Workout", "Outdoor Activity", "Daily News", "Leetcode - Self", "Leetcode - Group"
   ],
   Vishnu: [
     "Yoga", "Meditation", "No Sugar", "Journal", "10k Steps"
@@ -15,9 +14,6 @@ const checklistItemsPerUser = {
     "Run 2 miles", "Stretch", "Cold Shower", "Read 15 pages"
   ]
 };
-
-const checklistItems = checklistItemsPerUser[user];
-
 
 const getTodayDateString = (offset = 0) => {
   return format(subDays(new Date(), offset), "EEEE, MMMM d");
@@ -31,11 +27,16 @@ const getInitialData = () => {
 const Hard75DuoApp = () => {
   const [data, setData] = useState(getInitialData);
   const [currentDayOffset, setCurrentDayOffset] = useState(0);
-  const [currentUser, setCurrentUser] = useState("user1");
-  const [openUsers, setOpenUsers] = useState({ user1: true, user2: false, user3: false });
+  const [currentUser, setCurrentUser] = useState("Aheli");
+  const [openUsers, setOpenUsers] = useState({
+    Aheli: true,
+    Vishnu: false,
+    Varun: false
+  });
 
   const currentDate = getTodayDateString(currentDayOffset);
 
+  // Save data locally (can later replace this with Firebase)
   useEffect(() => {
     localStorage.setItem("hard75-data", JSON.stringify(data));
   }, [data]);
@@ -59,17 +60,17 @@ const Hard75DuoApp = () => {
 
   const isDayComplete = (user, date) => {
     const userDay = data[date]?.[user] || {};
-    return checklistItems.every(item => userDay[item]);
+    return checklistItemsPerUser[user].every(item => userDay[item]);
   };
 
   const getCompletedDaysCount = user => {
-    return Object.entries(data).filter(([date, val]) => isDayComplete(user, date)).length;
+    return Object.entries(data).filter(([date]) => isDayComplete(user, date)).length;
   };
 
   const getTodayCompletionPercentage = user => {
     const userDay = data[currentDate]?.[user] || {};
-    const completed = checklistItems.filter(item => userDay[item]).length;
-    return Math.round((completed / checklistItems.length) * 100);
+    const completed = checklistItemsPerUser[user].filter(item => userDay[item]).length;
+    return Math.round((completed / checklistItemsPerUser[user].length) * 100);
   };
 
   const users = ["Aheli", "Vishnu", "Varun"];
@@ -80,11 +81,11 @@ const Hard75DuoApp = () => {
 
   return (
     <div className="app-container">
-    <div className="app-title-wrapper">
-      <div className="title-line" />
-      <h1 className="main-title">RoutIN</h1>
-      <div className="title-line" />
-    </div>
+      <div className="app-title-wrapper">
+        <div className="title-line" />
+        <h1 className="main-title">RoutIN</h1>
+        <div className="title-line" />
+      </div>
 
       <div className="user-toggle">
         {users.map(user => (
@@ -93,20 +94,22 @@ const Hard75DuoApp = () => {
             className={currentUser === user ? "btn active" : "btn"}
             onClick={() => setCurrentUser(user)}
           >
-            {user.charAt(0).toUpperCase() + user.slice(1).replace("user", "User ")}
+            {user}
           </button>
         ))}
       </div>
+
       <div className="nav-controls">
         <button className="btn" onClick={() => setCurrentDayOffset(offset => offset + 1)}>← Previous</button>
         <h3 className="date-label">{currentDate}</h3>
         <button className="btn" onClick={() => setCurrentDayOffset(offset => Math.max(offset - 1, 0))}>Next →</button>
       </div>
+
       <div className="card-stack">
         {users.map(user => (
           <div key={user} className={`card ${user === currentUser ? "active-user" : ""}`}>
             <div className="card-header dropdown" onClick={() => toggleDropdown(user)}>
-              <h2>{user.charAt(0).toUpperCase() + user.slice(1).replace("user", "User ")}</h2>
+              <h2>{user}</h2>
               <p className="completion-percentage">{getTodayCompletionPercentage(user)}%</p>
             </div>
             {openUsers[user] && (
@@ -131,13 +134,14 @@ const Hard75DuoApp = () => {
           </div>
         ))}
       </div>
+
       <div className="progress-section">
         <h3>Streak</h3>
         <div className="progress-stats">
           {users.map(user => (
             <div key={user}>
-              <p>{user.charAt(0).toUpperCase() + user.slice(1).replace("user", "User ")}</p>
-              <p> {getCompletedDaysCount(user)}</p>
+              <p>{user}</p>
+              <p>{getCompletedDaysCount(user)}</p>
             </div>
           ))}
         </div>
