@@ -13,7 +13,7 @@ const checklistItems = [
 ];
 
 const getTodayDateString = (offset = 0) => {
-  return format(subDays(new Date(), offset), "MMMM d"); // Format: Month Day
+  return format(subDays(new Date(), offset), "EEEE, MMMM d"); // Format: Monday, June 15
 };
 
 const getInitialData = () => {
@@ -73,7 +73,12 @@ const Hard75DuoApp = () => {
 
   return (
     <div className="app-container">
-      <h1 className="main-title">75 Hard Trio Tracker</h1>
+    <div className="app-title-wrapper">
+      <div className="title-line" />
+      <h1 className="main-title">RoutIN</h1>
+      <div className="title-line" />
+    </div>
+
       <div className="user-toggle">
         {users.map(user => (
           <button
@@ -87,7 +92,7 @@ const Hard75DuoApp = () => {
       </div>
       <div className="nav-controls">
         <button className="btn" onClick={() => setCurrentDayOffset(offset => offset + 1)}>← Previous</button>
-        <p className="date-label">Date: {currentDate}</p>
+        <h3 className="date-label">{currentDate}</h3>
         <button className="btn" onClick={() => setCurrentDayOffset(offset => Math.max(offset - 1, 0))}>Next →</button>
       </div>
       <div className="card-stack">
@@ -95,7 +100,7 @@ const Hard75DuoApp = () => {
           <div key={user} className={`card ${user === currentUser ? "active-user" : ""}`}>
             <div className="card-header dropdown" onClick={() => toggleDropdown(user)}>
               <h2>{user.charAt(0).toUpperCase() + user.slice(1).replace("user", "User ")}</h2>
-              <p className="completion-percentage">{getTodayCompletionPercentage(user)}% complete</p>
+              <p className="completion-percentage">{getTodayCompletionPercentage(user)}%</p>
             </div>
             {openUsers[user] && (
               <div className="card-content">
@@ -120,12 +125,12 @@ const Hard75DuoApp = () => {
         ))}
       </div>
       <div className="progress-section">
-        <h3>Progress</h3>
+        <h3>Streak</h3>
         <div className="progress-stats">
           {users.map(user => (
             <div key={user}>
               <p>{user.charAt(0).toUpperCase() + user.slice(1).replace("user", "User ")}</p>
-              <p>⭐ {getCompletedDaysCount(user)}</p>
+              <p> {getCompletedDaysCount(user)}</p>
             </div>
           ))}
         </div>
