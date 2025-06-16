@@ -1,7 +1,8 @@
-// Hard75DuoApp.jsx
 import React, { useState, useEffect } from "react";
 import "./App.css";
 import { format, subDays } from "date-fns";
+import { db } from "./firebase";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 const checklistItems = [
   "Workout 1",
@@ -12,72 +13,87 @@ const checklistItems = [
   "Take Progress Photo"
 ];
 
-const getTodayDateString = (offset = 0) => {
-  return format(subDays(new Date(), offset), "EEEE, MMMM d"); // Format: Monday, June 15
-};
-
-const getInitialData = () => {
-  const saved = localStorage.getItem("hard75-data");
-  return saved ? JSON.parse(saved) : {};
-};
+const users = ["user1", "user2", "user3"];
+const getTodayDateString = (offset = 0) =>
+  format(subDays(new Date(), offset), "EEEE, MMMM d");
 
 const Hard75DuoApp = () => {
-  const [data, setData] = useState(getInitialData);
-  const [currentDayOffset, setCurrentDayOffset] = useState(0);
+  const [allUserData, setAllUserData] = useState({});
+  const [loadedUsers, setLoadedUsers] = useState(new Set());
   const [currentUser, setCurrentUser] = useState("user1");
-  const [openUsers, setOpenUsers] = useState({ user1: true, user2: false, user3: false });
-
+  const [currentDayOffset, setCurrentDayOffset] = useState(0);
+  const [loading, setLoading] = useState(true);
   const currentDate = getTodayDateString(currentDayOffset);
 
+  // Load all users' data once
   useEffect(() => {
-    localStorage.setItem("hard75-data", JSON.stringify(data));
-  }, [data]);
+    const fetchAll = async () => {
+      const loadedData = {};
+      const newLoaded = new Set();
+      for (const user of users) {
+        const snap = await getDoc(doc(db, "userData", user));
+        loadedData[user] = snap.exists() ? snap.data() : {};
+        newLoaded.add(user);
+      }
+      setAllUserData(loadedData);
+      setLoadedUsers(newLoaded);
+      setLoading(false);
+    };
+    fetchAll();
+  }, []);
+
+  // Save to Firestore only if this user's data has already been loaded
+  useEffect(() => {
+    if (!loadedUsers.has(currentUser)) return;
+    const save = async () => {
+      await setDoc(doc(db, "userData", currentUser), allUserData[currentUser] || {});
+    };
+    save();
+  }, [allUserData[currentUser]]); // Only watch current user's data
 
   const toggleItem = (user, date, item) => {
     if (user !== currentUser) return;
-    const userDay = data[date]?.[user] || {};
-    const updatedUserDay = {
-      ...userDay,
-      [item]: !userDay[item]
-    };
-    const updatedDay = {
-      ...data[date],
-      [user]: updatedUserDay
-    };
-    setData({
-      ...data,
-      [date]: updatedDay
-    });
+
+    const userData = allUserData[user] || {};
+    const day = userData[date] || {};
+    const updatedDay = { ...day, [item]: !day[item] };
+
+    setAllUserData(prev => ({
+      ...prev,
+      [user]: {
+        ...userData,
+        [date]: updatedDay
+      }
+    }));
   };
 
   const isDayComplete = (user, date) => {
-    const userDay = data[date]?.[user] || {};
-    return checklistItems.every(item => userDay[item]);
+    const day = allUserData[user]?.[date] || {};
+    return checklistItems.every(item => day[item]);
   };
 
-  const getCompletedDaysCount = user => {
-    return Object.entries(data).filter(([date, val]) => isDayComplete(user, date)).length;
+  const getCompletedDaysCount = (user) => {
+    const userData = allUserData[user] || {};
+    return Object.entries(userData).filter(([_, day]) =>
+      checklistItems.every(item => day[item])
+    ).length;
   };
 
-  const getTodayCompletionPercentage = user => {
-    const userDay = data[currentDate]?.[user] || {};
-    const completed = checklistItems.filter(item => userDay[item]).length;
+  const getTodayCompletionPercentage = (user) => {
+    const day = allUserData[user]?.[currentDate] || {};
+    const completed = checklistItems.filter(item => day[item]).length;
     return Math.round((completed / checklistItems.length) * 100);
   };
 
-  const users = ["user1", "user2", "user3"];
-
-  const toggleDropdown = user => {
-    setOpenUsers(prev => ({ ...prev, [user]: !prev[user] }));
-  };
+  if (loading) return <p>Loading...</p>;
 
   return (
     <div className="app-container">
-    <div className="app-title-wrapper">
-      <div className="title-line" />
-      <h1 className="main-title">RoutIN</h1>
-      <div className="title-line" />
-    </div>
+      <div className="app-title-wrapper">
+        <div className="title-line" />
+        <h1 className="main-title">RoutIN</h1>
+        <div className="title-line" />
+      </div>
 
       <div className="user-toggle">
         {users.map(user => (
@@ -86,51 +102,52 @@ const Hard75DuoApp = () => {
             className={currentUser === user ? "btn active" : "btn"}
             onClick={() => setCurrentUser(user)}
           >
-            {user.charAt(0).toUpperCase() + user.slice(1).replace("user", "User ")}
+            {user.replace("user", "User ")}
           </button>
         ))}
       </div>
+
       <div className="nav-controls">
-        <button className="btn" onClick={() => setCurrentDayOffset(offset => offset + 1)}>← Previous</button>
+        <button className="btn" onClick={() => setCurrentDayOffset(o => o + 1)}>← Previous</button>
         <h3 className="date-label">{currentDate}</h3>
-        <button className="btn" onClick={() => setCurrentDayOffset(offset => Math.max(offset - 1, 0))}>Next →</button>
+        <button className="btn" onClick={() => setCurrentDayOffset(o => Math.max(o - 1, 0))}>Next →</button>
       </div>
+
       <div className="card-stack">
         {users.map(user => (
           <div key={user} className={`card ${user === currentUser ? "active-user" : ""}`}>
-            <div className="card-header dropdown" onClick={() => toggleDropdown(user)}>
-              <h2>{user.charAt(0).toUpperCase() + user.slice(1).replace("user", "User ")}</h2>
+            <div className="card-header dropdown">
+              <h2>{user.replace("user", "User ")}</h2>
               <p className="completion-percentage">{getTodayCompletionPercentage(user)}%</p>
             </div>
-            {openUsers[user] && (
-              <div className="card-content">
-                <ul className="checklist">
-                  {checklistItems.map(item => (
-                    <li key={item}>
-                      <label>
-                        <input
-                          type="checkbox"
-                          disabled={user !== currentUser}
-                          checked={data[currentDate]?.[user]?.[item] || false}
-                          onChange={() => toggleItem(user, currentDate, item)}
-                        />
-                        {item}
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <div className="card-content">
+              <ul className="checklist">
+                {checklistItems.map(item => (
+                  <li key={item}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        disabled={user !== currentUser}
+                        checked={allUserData[user]?.[currentDate]?.[item] || false}
+                        onChange={() => toggleItem(user, currentDate, item)}
+                      />
+                      {item}
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         ))}
       </div>
+
       <div className="progress-section">
         <h3>Streak</h3>
         <div className="progress-stats">
           {users.map(user => (
             <div key={user}>
-              <p>{user.charAt(0).toUpperCase() + user.slice(1).replace("user", "User ")}</p>
-              <p> {getCompletedDaysCount(user)}</p>
+              <p>{user.replace("user", "User ")}</p>
+              <p>{getCompletedDaysCount(user)}</p>
             </div>
           ))}
         </div>
