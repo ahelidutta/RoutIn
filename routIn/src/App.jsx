@@ -1,8 +1,6 @@
 // Hard75DuoApp.jsx
 import React, { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import "./App.css";
 import { format, subDays } from "date-fns";
 
 const checklistItems = [
@@ -60,27 +58,45 @@ const Hard75DuoApp = () => {
     return Object.entries(data).filter(([date, val]) => isDayComplete(user, date)).length;
   };
 
+  const getTodayCompletionPercentage = user => {
+    const userDay = data[currentDate]?.[user] || {};
+    const completed = checklistItems.filter(item => userDay[item]).length;
+    return Math.round((completed / checklistItems.length) * 100);
+  };
+
+  const users = ["user1", "user2", "user3"];
+
   return (
-    <div className="p-4 space-y-4">
-      <h1 className="text-2xl font-bold text-center">75 Hard Duo Tracker</h1>
-      <div className="flex justify-center gap-4">
-        <Button onClick={() => setCurrentUser("user1")} variant={currentUser === "user1" ? "default" : "outline"}>User 1</Button>
-        <Button onClick={() => setCurrentUser("user2")} variant={currentUser === "user2" ? "default" : "outline"}>User 2</Button>
+    <div className="app-container">
+      <h1 className="main-title">75 Hard Trio Tracker</h1>
+      <div className="user-toggle">
+        {users.map(user => (
+          <button
+            key={user}
+            className={currentUser === user ? "btn active" : "btn"}
+            onClick={() => setCurrentUser(user)}
+          >
+            {user.charAt(0).toUpperCase() + user.slice(1).replace("user", "User ")}
+          </button>
+        ))}
       </div>
-      <div className="flex justify-between">
-        <Button onClick={() => setCurrentDayOffset(offset => offset + 1)}>← Previous</Button>
-        <p className="text-center">Date: {currentDate}</p>
-        <Button onClick={() => setCurrentDayOffset(offset => Math.max(offset - 1, 0))}>Next →</Button>
+      <div className="nav-controls">
+        <button className="btn" onClick={() => setCurrentDayOffset(offset => offset + 1)}>← Previous</button>
+        <p className="date-label">Date: {currentDate}</p>
+        <button className="btn" onClick={() => setCurrentDayOffset(offset => Math.max(offset - 1, 0))}>Next →</button>
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        {["user1", "user2"].map(user => (
-          <Card key={user} className={user === currentUser ? "border-2 border-green-500" : "border"}>
-            <CardContent>
-              <h2 className="font-semibold mb-2">{user === "user1" ? "User 1" : "User 2"}</h2>
-              <ul className="space-y-2">
+      <div className="card-stack">
+        {users.map(user => (
+          <div key={user} className={`card ${user === currentUser ? "active-user" : ""}`}>
+            <div className="card-content">
+              <div className="card-header">
+                <h2>{user.charAt(0).toUpperCase() + user.slice(1).replace("user", "User ")}</h2>
+                <p className="completion-percentage">{getTodayCompletionPercentage(user)}% complete</p>
+              </div>
+              <ul className="checklist">
                 {checklistItems.map(item => (
                   <li key={item}>
-                    <label className="flex items-center gap-2">
+                    <label>
                       <input
                         type="checkbox"
                         disabled={user !== currentUser}
@@ -92,17 +108,17 @@ const Hard75DuoApp = () => {
                   </li>
                 ))}
               </ul>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ))}
       </div>
-      <div className="mt-6">
-        <h3 className="text-lg font-bold text-center">Progress</h3>
-        <div className="flex justify-around">
-          {["user1", "user2"].map(user => (
-            <div key={user} className="text-center">
-              <p>{user === "user1" ? "User 1" : "User 2"}</p>
-              <p>⭐ {getCompletedDaysCount(user)} days complete</p>
+      <div className="progress-section">
+        <h3>Progress</h3>
+        <div className="progress-stats">
+          {users.map(user => (
+            <div key={user}>
+              <p>{user.charAt(0).toUpperCase() + user.slice(1).replace("user", "User ")}</p>
+              <p>⭐ {getCompletedDaysCount(user)} days</p>
             </div>
           ))}
         </div>
